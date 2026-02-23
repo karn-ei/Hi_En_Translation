@@ -18,7 +18,7 @@ class EIAuthConfig:
     token_endpoint: str = "/api/v1/token"
     generate_endpoint: str = "/api/v1/multimode-to-text?stream=false"
 
-    model_name: str = "gpt-4o"
+    model_name: str = "gpt-5.2"
     temperature: float = 0.0
     max_tokens: int = 80
 

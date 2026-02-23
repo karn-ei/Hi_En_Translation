@@ -77,7 +77,7 @@ def build_ei_client_from_settings() -> Optional[EITranslationClient]:
         token_endpoint=get_setting("EI_TOKEN_ENDPOINT", "/api/v1/token") or "/api/v1/token",
         generate_endpoint=get_setting("EI_GENERATE_ENDPOINT", "/api/v1/multimode-to-text?stream=false")
         or "/api/v1/multimode-to-text?stream=false",
-        model_name=get_setting("EI_MODEL_NAME", "gpt-4o") or "gpt-4o",
+        model_name=get_setting("EI_MODEL_NAME", "gpt-5.2") or "gpt-5.2",
         temperature=setting_float("EI_TEMPERATURE", 0.0),
         max_tokens=setting_int("EI_MAX_TOKENS", 120),
     )
@@ -219,7 +219,7 @@ if uploaded is not None:
                     debug_box.json(info["http_debug"])
 
         try:
-            with st.spinner("Processing (live updates below)..."):
+            with st.spinner("Processing (live updates above)..."):
                 process_workbook_inplace(
                     wb,
                     base_prompt=st.session_state.prompt_text,
