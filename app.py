@@ -62,7 +62,7 @@ def setting_float(name: str, default: float) -> float:
         return default
 
 
-def build_ei_client_from_settings() -> Optional[EITranslationClient]:
+def build_ei_client_from_settings(model_name_override: Optional[str] = None) -> Optional[EITranslationClient]:
     base_url = get_setting("EI_BASE_URL", "")
     bearer = get_setting("EI_AUTH_TOKEN", "")
     if not base_url or not bearer:
@@ -77,7 +77,7 @@ def build_ei_client_from_settings() -> Optional[EITranslationClient]:
         token_endpoint=get_setting("EI_TOKEN_ENDPOINT", "/api/v1/token") or "/api/v1/token",
         generate_endpoint=get_setting("EI_GENERATE_ENDPOINT", "/api/v1/multimode-to-text?stream=false")
         or "/api/v1/multimode-to-text?stream=false",
-        model_name=get_setting("EI_MODEL_NAME", "gpt-5.2") or "gpt-5.2",
+        model_name=(model_name_override or get_setting("EI_MODEL_NAME", "gpt-4o") or "gpt-4o"),
         temperature=setting_float("EI_TEMPERATURE", 0.0),
         max_tokens=setting_int("EI_MAX_TOKENS", 120),
     )
@@ -123,14 +123,36 @@ use_ai = st.checkbox("Use AI translation", value=True)
 use_class_guidance = st.checkbox("Use 'Class' column for grade-level English", value=True)
 
 dictionary_override: Dict[str, str] = {"सौ": "hundred"}
-client = build_ei_client_from_settings() if use_ai else None
 
+# ---------------------------
+# Model selection (EI routing)
+# ---------------------------
+AVAILABLE_MODELS = ["gpt-4o", "gpt-5.2", "gemini-2.5-pro-preview-05-06"]
+DEFAULT_MODEL = "gpt-5.2"
+
+if "ei_model_name" not in st.session_state:
+    st.session_state.ei_model_name = DEFAULT_MODEL
 
 # ---------------------------
 # Connection test
 # ---------------------------
 st.subheader("Connection test")
-if st.button('Test EI Connection (translate "सौ")'):
+mcol, bcol = st.columns([2, 1])
+with mcol:
+    st.session_state.ei_model_name = st.selectbox(
+        "Model",
+        AVAILABLE_MODELS,
+        index=AVAILABLE_MODELS.index(st.session_state.ei_model_name)
+        if st.session_state.ei_model_name in AVAILABLE_MODELS
+        else AVAILABLE_MODELS.index(DEFAULT_MODEL),
+        help="Select which model EI should route your request to.",
+    )
+with bcol:
+    test_clicked = st.button('Test EI Connection (translate "सौ")')
+
+client = build_ei_client_from_settings(model_name_override=st.session_state.ei_model_name) if use_ai else None
+
+if test_clicked:
     if not use_ai:
         st.error("AI is disabled.")
     elif client is None:
