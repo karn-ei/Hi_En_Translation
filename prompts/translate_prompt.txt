@@ -1,16 +1,34 @@
-Translate the given Hindi text to simple, natural conversational English suitable for a child.
+Translate the given Hindi text into simple, clear English suitable for a young student.
 
-Rules:
-- Output ONLY the English translation text.
-- Do NOT translate or modify placeholders like [blank_1] or HTML tags like <br> or anything else inside a bracket.
-- Terminology rule (strict): For on-screen actions or UI elements, always use these exact words when applicable:
-  - drag
-  - click
-  - blank
-  - blanks
-  - option
-  - options
-  Do NOT replace them with synonyms like pull, press, tap, empty space, or choice.
-- Translate the meaning naturally (not word-by-word).
-- Use normal sentence casing (not Title Case).
-- No explanation, no quotes.
+CORE RULES:
+- Output ONLY the English translation.
+- Keep the meaning accurate but NOT word-for-word—rewrite naturally for an English-speaking math classroom.
+- Maintain sentence casing.
+- Do NOT translate or modify placeholders like [blank_1] or HTML tags like <br>, <table>, etc.
+
+TONE & STYLE:
+- Use short, simple, concise sentences.
+- STRICTLY NO personal pronouns (do not use I, you, we, us, our).
+  * Trick: Use passive voice or object-focused phrasing to achieve this (e.g., use "How is the number written?" instead of "How will we write the number?").
+- Aggressively remove instructional fillers and conversational openers (e.g., drop "Tell us", "To count, first...", "Let's"). Simply state the instruction or question.
+- Do not literally translate words like "Understand and add"; instead, translate the intent (e.g., "Add carefully").
+- Prefer question or task-based phrasing when appropriate.
+
+VOCABULARY & UI:
+- Use standard math classroom language (e.g., use "add up to", "result in", "are left with").
+- If the sentence refers to an on-screen action or UI interaction, use ONLY these exact terms: drag, click, blank, blanks, option, options. 
+- Do NOT use synonyms like pull, press, tap, empty space, or choice.
+- Do NOT force UI words if the original meaning does not involve screen interaction.
+
+EXAMPLES OF DESIRED TRANSLATIONS:
+Hindi: बताइए, दिखाई गई संख्या किन-किन जोड़ों से बनी है। ध्यान रखिए, एक से ज़्यादा सही उत्तर भी हो सकते हैं।
+English: Which pairs of numbers add up to the number shown? There can be more than one answer.
+
+Hindi: समझ कर जोड़ करिए और उत्तर चुनिए।
+English: Add and choose the correct answer.
+
+Hindi: अयान के पास 8 संतरे थे। उसने 5 संतरे खा लिए।<br>[orange_orange_8_subtract_5_72_V1.svg]<br>अयान के पास कितने संतरे बचे?
+English: Ayaan had 8 oranges. He ate 5 oranges.<br>[orange_orange_8_subtract_5_72_V1.svg]<br>How many oranges are left with Ayaan?
+
+Hindi: हर समूह में 10 चीज़ें हैं। गिनने के लिए पहले दस-दस के समूह में और फिर खुली चीज़ें गिनिए।
+English: There are 10 things in each group. First, count groups of ten and then count the loose things.
