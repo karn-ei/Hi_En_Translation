@@ -254,9 +254,8 @@ def process_workbook_inplace(
     Two-pass strategy:
       1) Find effective_last_row (first fully empty row - 1)
       2) Discover candidate columns (no sampling bias)
-      3) Translate only candidate columns up to effective_last_row
-
-    IMPORTANT: Translation is span-level, preserving <br> and [blank_n] tokens.
+      3) Duplicate candidate columns to retain original text
+      4) Translate only the candidate columns up to effective_last_row
     """
     ws = wb[sheet_name] if sheet_name else wb.active
 
@@ -265,13 +264,6 @@ def process_workbook_inplace(
     for c in range(1, ws.max_column + 1):
         v = ws.cell(row=1, column=c).value
         col_names[c] = str(v).strip() if isinstance(v, str) and v.strip() else f"Col {c}"
-
-    # class column
-    class_col_idx = None
-    for c in range(1, ws.max_column + 1):
-        if ws.cell(row=1, column=c).value == "Class":
-            class_col_idx = c
-            break
 
     effective_last_row = _find_effective_last_row(ws)
 
@@ -293,6 +285,47 @@ def process_workbook_inplace(
 
     if not candidate_cols:
         return
+
+    # --- NEW LOGIC: Duplicate columns to preserve original Hindi text ---
+    offset = 0
+    new_candidate_cols = []
+    max_row_to_copy = ws.max_row
+
+    for c in candidate_cols:
+        # Calculate the new insertion point taking previous insertions into account
+        actual_c = c + offset
+        
+        # Insert a new blank column to hold the original text
+        ws.insert_cols(actual_c)
+
+        # Copy values from the shifted candidate column to the new "Original" column
+        for r in range(1, max_row_to_copy + 1):
+            ws.cell(row=r, column=actual_c).value = ws.cell(row=r, column=actual_c + 1).value
+
+        # Update the header of the "Original" column
+        orig_header = str(ws.cell(row=1, column=actual_c + 1).value or f"Col {c}")
+        ws.cell(row=1, column=actual_c).value = f"{orig_header} (Original)"
+
+        # The target for translation is now shifted one to the right
+        new_candidate_cols.append(actual_c + 1)
+        offset += 1
+
+    # Update working variables based on the new layout
+    candidate_cols = new_candidate_cols
+
+    # Re-map col_names because columns shifted right
+    col_names = {}
+    for c in range(1, ws.max_column + 1):
+        v = ws.cell(row=1, column=c).value
+        col_names[c] = str(v).strip() if isinstance(v, str) and v.strip() else f"Col {c}"
+
+    # Re-discover class column index based on new layout
+    class_col_idx = None
+    for c in range(1, ws.max_column + 1):
+        if ws.cell(row=1, column=c).value == "Class":
+            class_col_idx = c
+            break
+    # --- END NEW LOGIC ---
 
     total_cells = max(0, (effective_last_row - 1) * len(candidate_cols))
     done_cells = 0
