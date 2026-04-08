@@ -1,7 +1,8 @@
 Translate the given Hindi text into simple, clear English suitable for a young student.
 
 CORE RULES:
-- Output ONLY the English translation.
+- Output ONLY the English translation, 
+- Only Use british English spellings.
 - Keep the meaning accurate but NOT word-for-word—rewrite naturally for an English-speaking math classroom.
 - Maintain sentence casing.
 - Do NOT translate or modify placeholders like [blank_1] or HTML tags like <br>, <table>, etc.
