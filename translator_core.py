@@ -17,6 +17,21 @@ DEVANAGARI_CHAR_RE = re.compile(r"[\u0900-\u097F]")
 PROTECTED_RE = re.compile(r"(<br\s*/?>|\[blank_\d+\])", re.IGNORECASE)
 
 
+def extract_row_context(ws, row_idx: int) -> str:
+    """Extract media filenames from the row to provide context for the AI."""
+    context_items = []
+    for c in range(1, ws.max_column + 1):
+        val = ws.cell(row=row_idx, column=c).value
+        if isinstance(val, str) and val.strip():
+            # Matches strings containing media extensions (e.g., [Fork_grey_9_4_72_V1.svg])
+            if re.search(r'\.(svg|png|jpg|jpeg|mp3|wav)', val, re.IGNORECASE):
+                context_items.append(val.strip())
+    
+    if context_items:
+        return "Context from media files in this row (use this to disambiguate terms): " + ", ".join(context_items)
+    return ""
+
+
 def contains_hindi(text: str) -> bool:
     return bool(DEVANAGARI_CHAR_RE.search(text))
 
@@ -46,16 +61,20 @@ def normalize_class(value: Any) -> str:
     return s.strip()
 
 
-def build_row_prompt(base_prompt: str, class_value: str, use_class_guidance: bool) -> str:
+def build_row_prompt(base_prompt: str, class_value: str, use_class_guidance: bool, row_context: str = "") -> str:
     base_prompt = (base_prompt or "").strip()
+    prompt_parts = [base_prompt]
 
-    if not use_class_guidance:
-        return base_prompt
+    if use_class_guidance:
+        if class_value:
+            prompt_parts.append(f"Audience: Students in Class {class_value}. Use simple age-appropriate English.")
+        else:
+            prompt_parts.append("Audience: School students. Use simple English.")
+            
+    if row_context:
+        prompt_parts.append(row_context)
 
-    if class_value:
-        return base_prompt + f"\n\nAudience: Students in Class {class_value}. Use simple age-appropriate English."
-
-    return base_prompt + "\n\nAudience: School students. Use simple English."
+    return "\n\n".join(prompt_parts)
 
 
 def translate_cell_preserving_tokens(
@@ -64,7 +83,7 @@ def translate_cell_preserving_tokens(
     prompt: str,
     dictionary_override: Dict[str, str],
     client: Optional[EITranslationClient],
-    cache: Dict[str, str],
+    cache: Dict[Tuple[str, str], str],
 ) -> str:
     """
     Key fix:
@@ -99,15 +118,16 @@ def translate_cell_preserving_tokens(
             out_parts.append(dictionary_override[trimmed])
             continue
 
-        # Cache by exact span (including punctuation/spaces)
-        if seg in cache:
-            out_parts.append(cache[seg])
+        # Cache by (prompt, segment) to avoid cross-row context collisions
+        cache_key = (prompt, seg)
+        if cache_key in cache:
+            out_parts.append(cache[cache_key])
             if client:
                 client.cache_hits += 1
             continue
 
         if client is None:
-            cache[seg] = seg
+            cache[cache_key] = seg
             out_parts.append(seg)
             continue
 
@@ -118,7 +138,7 @@ def translate_cell_preserving_tokens(
         except Exception:
             translated = seg
 
-        cache[seg] = translated
+        cache[cache_key] = translated
         out_parts.append(translated)
 
     return "".join(out_parts)
@@ -329,7 +349,7 @@ def process_workbook_inplace(
 
     total_cells = max(0, (effective_last_row - 1) * len(candidate_cols))
     done_cells = 0
-    cache: Dict[str, str] = {}
+    cache: Dict[Tuple[str, str], str] = {}
 
     def emit(event: Dict[str, Any]) -> None:
         if not progress_cb:
@@ -351,7 +371,9 @@ def process_workbook_inplace(
             class_value = ""
             if class_col_idx:
                 class_value = normalize_class(ws.cell(row=r, column=class_col_idx).value)
-            row_prompt = build_row_prompt(base_prompt, class_value, use_class_guidance)
+            
+            row_context = extract_row_context(ws, r)
+            row_prompt = build_row_prompt(base_prompt, class_value, use_class_guidance, row_context)
 
             for c in candidate_cols:
                 done_cells += 1
